@@ -89,7 +89,7 @@ function WhyCatto() {
     { n: "01", t: "Curaduría propia", d: "Productos elegidos uno por uno, no un catálogo infinito." },
     { n: "02", t: "Puntos CATTO", d: "Ganás puntos en cada compra para canjear por descuentos reales." },
     { n: "03", t: "Atención directa", d: "WhatsApp con una persona real. Sin bots ni esperas." },
-    { n: "04", t: "Pago flexible", d: "Transferencia con 15% off, efectivo o retiro en punto de encuentro." },
+    { n: "04", t: "Pago flexible", d: "Transferencia, efectivo o retiro en punto de encuentro." },
   ];
   return (
     <section className="bg-[#121215] border-y border-[#27272A] py-14 sm:py-20">

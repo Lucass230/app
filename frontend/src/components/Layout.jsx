@@ -9,7 +9,7 @@ function Marquee() {
   return (
     <div className="bg-[#E60023] text-white py-2 overflow-hidden whitespace-nowrap">
       <div className="animate-marquee inline-block font-mono text-xs font-bold uppercase tracking-widest">
-        {Array(6).fill("15% OFF EN TRANSFERENCIA · PUNTOS CATTO EN CADA COMPRA · ").join("")}
+        {Array(6).fill("PUNTOS CATTO EN CADA COMPRA · COMPRÁ POR WHATSAPP · ").join("")}
       </div>
     </div>
   );

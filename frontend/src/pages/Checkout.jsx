@@ -164,7 +164,7 @@ export default function Checkout() {
             <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-500 mb-4">Medio de pago</h2>
             <div className="space-y-2">
               {[
-                { id: "transferencia", label: "Transferencia bancaria", note: "15% off aplicado por admin" },
+                { id: "transferencia", label: "Transferencia bancaria", note: "" },
                 { id: "efectivo", label: "Efectivo", note: "" },
                 { id: "tarjeta", label: "Pago con tarjeta — Próximamente", note: "Actualmente deshabilitado", disabled: cardDisabled },
               ].map((o) => (

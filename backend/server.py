@@ -1194,7 +1194,7 @@ async def seed_if_empty():
         slides = [
             {"title": "URBAN / TECH / ESSENTIALS", "subtitle": "Nueva colección", "description": "Lo mejor en calzado, tecnología y accesorios en un solo lugar.", "image_url": "https://images.unsplash.com/photo-1511556820780-d912e42b4980?w=1600&q=85", "button_text": "VER CATÁLOGO", "button_link": "/productos", "order": 1},
             {"title": "HASTA 30% OFF", "subtitle": "Ofertas CATTO", "description": "Descuentos reales en productos seleccionados.", "image_url": "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=85", "button_text": "VER OFERTAS", "button_link": "/productos?on_sale=true", "order": 2},
-            {"title": "TRANSFERENCIA BANCARIA", "subtitle": "Pagá como quieras", "description": "15% OFF en pago con transferencia. Efectivo también disponible.", "image_url": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&q=85", "button_text": "COMPRAR", "button_link": "/productos", "order": 3},
+            {"title": "TRANSFERENCIA BANCARIA", "subtitle": "Pagá como quieras", "description": "Transferencia o efectivo. Elegí cómo abonar tu pedido.", "image_url": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&q=85", "button_text": "COMPRAR", "button_link": "/productos", "order": 3},
         ]
         for s in slides:
             await db.carousel.insert_one({**s, "id": new_id(), "active": True, "created_at": now_iso()})
