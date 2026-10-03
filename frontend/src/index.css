@@ -8,6 +8,8 @@ html, body, #root {
     background-color: #0D0D0F;
     color: #FAFAFA;
     min-height: 100vh;
+    overflow-x: hidden;
+    max-width: 100vw;
 }
 
 body {
@@ -17,6 +19,14 @@ body {
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
 }
+
+/* Prevent any element from forcing horizontal overflow */
+img, video, canvas, iframe { max-width: 100%; height: auto; }
+.product-card img.product-img { height: 100%; }
+.hero-overlay img, .hero-slide img { height: 100%; }
+
+/* Flex children should be allowed to shrink below their intrinsic content width */
+main, .flex-safe-shrink > * { min-width: 0; }
 
 .font-heading { font-family: 'Syne', sans-serif; }
 .font-body { font-family: 'Plus Jakarta Sans', sans-serif; }

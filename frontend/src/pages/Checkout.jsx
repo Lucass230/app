@@ -124,10 +124,10 @@ export default function Checkout() {
   const cardDisabled = !settings.card_payment_enabled;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-12 py-10 animate-fade-up">
-      <h1 className="font-heading text-4xl sm:text-6xl font-extrabold uppercase tracking-tighter text-white mb-8">Checkout</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
-        <div className="space-y-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-10 animate-fade-up">
+      <h1 className="font-heading font-extrabold uppercase tracking-tighter text-white mb-6 sm:mb-8 break-words" style={{ fontSize: "clamp(2rem, 10vw, 4rem)" }}>Checkout</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-8">
+        <div className="space-y-6 sm:space-y-8 min-w-0">
           <section>
             <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-500 mb-4">Medio de pago</h2>
             <div className="space-y-2">
@@ -193,20 +193,20 @@ export default function Checkout() {
           </section>
         </div>
 
-        <aside className="h-fit border border-[#27272A] bg-[#121215] p-6 sticky top-20">
+        <aside className="h-fit border border-[#27272A] bg-[#121215] p-5 sm:p-6 lg:sticky lg:top-20">
           <h3 className="font-mono text-xs uppercase tracking-widest text-zinc-500 mb-5">Resumen</h3>
           <div className="space-y-3 text-sm">
             {items.map((it, i) => (
-              <div key={i} className="flex justify-between text-zinc-400">
-                <span className="truncate pr-2">{it.quantity}× {it.product.name}</span>
-                <span className="font-mono">{formatARS(it.product.final_price * it.quantity)}</span>
+              <div key={i} className="flex justify-between text-zinc-400 gap-3">
+                <span className="truncate">{it.quantity}× {it.product.name}</span>
+                <span className="font-mono whitespace-nowrap shrink-0">{formatARS(it.product.final_price * it.quantity)}</span>
               </div>
             ))}
-            <div className="border-t border-[#27272A] pt-3 flex justify-between text-zinc-300"><span>Subtotal</span><span className="font-mono">{formatARS(subtotal)}</span></div>
-            {discount > 0 && <div className="flex justify-between text-[#E60023]"><span>Descuento</span><span className="font-mono">-{formatARS(discount)}</span></div>}
-            {couponDiscount > 0 && <div className="flex justify-between text-[#E60023]"><span>Cupón {couponApplied.code}</span><span className="font-mono">-{formatARS(couponDiscount)}</span></div>}
-            {redeemDiscount > 0 && <div className="flex justify-between text-[#E60023]"><span>Puntos</span><span className="font-mono">-{formatARS(redeemDiscount)}</span></div>}
-            <div className="border-t border-[#27272A] pt-3 flex justify-between font-bold text-white text-lg"><span>Total</span><span className="font-mono">{formatARS(finalTotal)}</span></div>
+            <div className="border-t border-[#27272A] pt-3 flex justify-between text-zinc-300"><span>Subtotal</span><span className="font-mono whitespace-nowrap">{formatARS(subtotal)}</span></div>
+            {discount > 0 && <div className="flex justify-between text-[#E60023]"><span>Descuento</span><span className="font-mono whitespace-nowrap">-{formatARS(discount)}</span></div>}
+            {couponDiscount > 0 && <div className="flex justify-between text-[#E60023] gap-2"><span className="truncate">Cupón {couponApplied.code}</span><span className="font-mono whitespace-nowrap">-{formatARS(couponDiscount)}</span></div>}
+            {redeemDiscount > 0 && <div className="flex justify-between text-[#E60023]"><span>Puntos</span><span className="font-mono whitespace-nowrap">-{formatARS(redeemDiscount)}</span></div>}
+            <div className="border-t border-[#27272A] pt-3 flex justify-between font-bold text-white text-base sm:text-lg"><span>Total</span><span className="font-mono whitespace-nowrap">{formatARS(finalTotal)}</span></div>
           </div>
           <button onClick={place} disabled={loading} data-testid="place-order-btn" className="w-full mt-6 bg-[#E60023] hover:bg-[#FF1E27] disabled:bg-zinc-800 text-white font-body font-bold text-sm uppercase tracking-wider py-4 shadow-[0_0_20px_rgba(230,0,35,0.3)]">
             {loading ? "Procesando..." : "COMPRAR"}

@@ -72,13 +72,13 @@ export default function AdminProducts() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="font-heading text-4xl uppercase font-extrabold tracking-tighter text-white">Productos</h1>
-        <button onClick={openNew} data-testid="new-product-btn" className="bg-[#E60023] text-white font-body font-bold text-xs uppercase tracking-wider px-5 py-3 flex items-center gap-2"><Plus size={14} /> Nuevo</button>
+      <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-wrap">
+        <h1 className="font-heading uppercase font-extrabold tracking-tighter text-white break-words" style={{ fontSize: "clamp(1.75rem, 7vw, 2.5rem)" }}>Productos</h1>
+        <button onClick={openNew} data-testid="new-product-btn" className="bg-[#E60023] text-white font-body font-bold text-xs uppercase tracking-wider px-4 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2 whitespace-nowrap"><Plus size={14} /> Nuevo</button>
       </div>
 
-      <div className="border border-[#27272A] overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="border border-[#27272A] overflow-x-auto -mx-4 sm:mx-0">
+        <table className="w-full text-sm min-w-[640px]">
           <thead className="bg-[#18181B]">
             <tr className="text-left">
               {["Imagen", "Nombre", "Categoría", "Precio", "Stock", "Estado", "Acciones"].map(h => <th key={h} className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 p-3">{h}</th>)}
@@ -105,20 +105,20 @@ export default function AdminProducts() {
 
       {open && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto">
-          <div className="min-h-screen flex items-start justify-center p-4">
-            <div className="w-full max-w-3xl bg-[#121215] border border-[#27272A] p-6 my-10">
+          <div className="min-h-screen flex items-start justify-center p-3 sm:p-4">
+            <div className="w-full max-w-3xl bg-[#121215] border border-[#27272A] p-4 sm:p-6 my-4 sm:my-10">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-heading text-2xl uppercase font-bold text-white">{editing ? "Editar" : "Nuevo"} producto</h2>
                 <button onClick={() => setOpen(false)}><X className="text-zinc-400" /></button>
               </div>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Nombre"><input data-testid="prod-name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="input" /></Field>
                   <Field label="Marca"><input value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="input" /></Field>
                 </div>
                 <Field label="Descripción corta"><input value={form.short_description} onChange={e => setForm({ ...form, short_description: e.target.value })} className="input" /></Field>
                 <Field label="Descripción"><textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="input" /></Field>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Categoría">
                     <select data-testid="prod-cat" value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className="input">
                       <option value="">Elegir...</option>
@@ -127,7 +127,7 @@ export default function AdminProducts() {
                   </Field>
                   <Field label="SKU"><input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} className="input" /></Field>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Field label="Precio (ARS)"><input data-testid="prod-price" type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="input" /></Field>
                   <Field label="Descuento (%)"><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm({ ...form, discount_percent: e.target.value })} className="input" /></Field>
                   <Field label="Stock"><input type="number" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="input" /></Field>

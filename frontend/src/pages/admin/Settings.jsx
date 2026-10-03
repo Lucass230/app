@@ -15,7 +15,7 @@ export default function Settings() {
 
   return (
     <div>
-      <h1 className="font-heading text-4xl uppercase font-extrabold tracking-tighter text-white mb-8">Configuración</h1>
+      <h1 className="font-heading uppercase font-extrabold tracking-tighter text-white mb-6 sm:mb-8 break-words" style={{ fontSize: "clamp(1.75rem, 7vw, 2.5rem)" }}>Configuración</h1>
       <div className="max-w-3xl space-y-5">
         <Field label="Nombre de la tienda"><input value={s.store_name || ""} onChange={set("store_name")} className="input" /></Field>
         <Field label="WhatsApp (con prefijo, ej: 5493813007953)"><input value={s.whatsapp_number || ""} onChange={set("whatsapp_number")} data-testid="setting-wa" className="input" /></Field>

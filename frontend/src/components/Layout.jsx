@@ -33,8 +33,8 @@ function Header() {
     <>
       <Marquee />
       <header className="sticky top-0 z-40 bg-[#0D0D0F]/90 backdrop-blur-xl border-b border-[#27272A]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <Link to="/" data-testid="brand-logo" className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tighter text-white hover:text-[#E60023] transition-colors">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
+          <Link to="/" data-testid="brand-logo" className="font-heading text-xl sm:text-3xl font-extrabold tracking-tighter text-white hover:text-[#E60023] transition-colors shrink-0">
             CATTO<span className="text-[#E60023]">.</span>
           </Link>
 
@@ -53,14 +53,14 @@ function Header() {
             <input data-testid="header-search" value={q} onChange={(e) => setQ(e.target.value)} className="bg-transparent outline-none text-sm px-2 flex-1 text-white placeholder:text-zinc-500" placeholder="Buscar productos..." />
           </form>
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 sm:gap-4 shrink-0">
             <Link to="/favoritos" data-testid="nav-favorites" className="p-2 text-zinc-300 hover:text-[#E60023] transition-colors">
-              <Heart size={20} />
+              <Heart size={18} />
             </Link>
             <Link to="/carrito" data-testid="nav-cart" className="relative p-2 text-zinc-300 hover:text-white transition-colors">
-              <ShoppingCart size={20} />
+              <ShoppingCart size={18} />
               {count > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#E60023] text-white text-[10px] font-mono font-bold rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-[#E60023] text-white text-[10px] font-mono font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">
                   {count}
                 </span>
               )}
@@ -68,7 +68,7 @@ function Header() {
             {user ? (
               <div className="hidden sm:flex items-center gap-2">
                 <Link to={user.role === "admin" ? "/admin" : "/cuenta"} data-testid="nav-account" className="p-2 text-zinc-300 hover:text-white transition-colors">
-                  <User size={20} />
+                  <User size={18} />
                 </Link>
                 <button onClick={logout} data-testid="nav-logout" className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 hover:text-[#E60023] transition">Salir</button>
               </div>
@@ -151,17 +151,17 @@ function WhatsAppFloat() {
   const number = s.whatsapp_number || "5493813007953";
   const msg = encodeURIComponent("Hola CATTO, quiero hacer una consulta.");
   return (
-    <a href={`https://wa.me/${number}?text=${msg}`} target="_blank" rel="noreferrer" data-testid="whatsapp-float" className="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#20ba5a] text-black p-3.5 rounded-full shadow-[0_0_25px_rgba(37,211,102,0.4)] transition-all hover:scale-110">
-      <MessageCircle size={22} fill="black" />
+    <a href={`https://wa.me/${number}?text=${msg}`} target="_blank" rel="noreferrer" data-testid="whatsapp-float" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 bg-[#25D366] hover:bg-[#20ba5a] text-black p-3 sm:p-3.5 rounded-full shadow-[0_0_25px_rgba(37,211,102,0.4)] transition-all hover:scale-110">
+      <MessageCircle size={20} fill="black" />
     </a>
   );
 }
 
 export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#0D0D0F]">
+    <div className="min-h-screen flex flex-col bg-[#0D0D0F] w-full max-w-full overflow-x-hidden">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 w-full min-w-0">
         <Outlet />
       </main>
       <Footer />

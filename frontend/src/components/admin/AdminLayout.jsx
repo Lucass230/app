@@ -30,7 +30,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0F] flex">
+    <div className="min-h-screen bg-[#0D0D0F] flex w-full max-w-full overflow-x-hidden">
       <aside className="hidden lg:flex w-64 bg-[#0D0D0F] border-r border-[#27272A] flex-col fixed h-full">
         <div className="p-6 border-b border-[#27272A]">
           <h2 className="font-heading text-2xl font-extrabold tracking-tighter text-white">CATTO<span className="text-[#E60023]">.</span></h2>
@@ -48,13 +48,19 @@ export default function AdminLayout() {
           <button onClick={logout} data-testid="admin-logout" className="w-full flex items-center gap-3 px-3 py-2 text-zinc-400 hover:text-[#E60023] text-sm"><LogOut size={14} /> Cerrar sesión</button>
         </div>
       </aside>
-      <main className="flex-1 lg:ml-64 min-h-screen">
-        <div className="lg:hidden sticky top-0 z-30 bg-[#0D0D0F] border-b border-[#27272A] p-4 flex gap-2 overflow-x-auto">
-          {nav.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `whitespace-nowrap px-3 py-2 text-xs font-mono uppercase tracking-widest ${isActive ? "bg-[#E60023] text-white" : "text-zinc-400 border border-[#27272A]"}`}>{n.label}</NavLink>
-          ))}
+      <main className="flex-1 min-w-0 w-full lg:ml-64 min-h-screen">
+        <div className="lg:hidden sticky top-0 z-30 bg-[#0D0D0F] border-b border-[#27272A] flex items-center justify-between px-3 py-3 gap-2">
+          <h2 className="font-heading text-lg font-extrabold tracking-tighter text-white shrink-0">CATTO<span className="text-[#E60023]">.</span></h2>
+          <div className="flex-1 min-w-0 overflow-x-auto">
+            <div className="flex gap-1.5 w-max">
+              {nav.map((n) => (
+                <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `whitespace-nowrap px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider ${isActive ? "bg-[#E60023] text-white" : "text-zinc-400 border border-[#27272A]"}`}>{n.label}</NavLink>
+              ))}
+            </div>
+          </div>
+          <button onClick={logout} data-testid="admin-logout-mobile" className="shrink-0 p-2 text-zinc-400 hover:text-[#E60023]"><LogOut size={16} /></button>
         </div>
-        <div className="p-6 lg:p-10">
+        <div className="p-4 sm:p-6 lg:p-10 min-w-0 max-w-full">
           <Outlet />
         </div>
       </main>

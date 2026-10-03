@@ -84,10 +84,10 @@ export default function ProductReviews({ product }) {
   const dist = [5, 4, 3, 2, 1].map((n) => ({ n, c: reviews.filter(r => r.rating === n).length }));
 
   return (
-    <section className="mt-16 border-t border-[#27272A] pt-12">
-      <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
-        <div>
-          <h2 className="font-heading text-3xl sm:text-4xl font-extrabold uppercase tracking-tighter text-white">Reseñas</h2>
+    <section className="mt-12 sm:mt-16 border-t border-[#27272A] pt-10 sm:pt-12">
+      <div className="flex items-end justify-between flex-wrap gap-4 mb-6 sm:mb-8">
+        <div className="min-w-0">
+          <h2 className="font-heading font-extrabold uppercase tracking-tighter text-white break-words" style={{ fontSize: "clamp(1.75rem, 7vw, 2.5rem)" }}>Reseñas</h2>
           <div className="flex items-center gap-3 mt-2">
             <Stars value={Math.round(avg)} size={18} />
             <span className="font-mono text-sm text-white font-bold">{avg.toFixed(1)}</span>
