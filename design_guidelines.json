@@ -1,0 +1,220 @@
+{
+  "project_identity": {
+    "name": "CATTO",
+    "description": "Premium independent fashion & lifestyle e-commerce store (Argentina). Editorial urban aesthetic with high contrast dark identity, bold headlines, layered typography, and strong electric red accents.",
+    "language": "es-AR",
+    "currency": "ARS ($)",
+    "aesthetic_archetype": "Editorial Urban Tech Fashion / Dark Brutalism"
+  },
+  "responsive": {
+    "breakpoint": "mobile-first",
+    "strategy": "Design for mobile screens (375px+) first, then scale to tablet (768px) and desktop (1024px+). On mobile, stack all side-by-side elements, enforce high tap targets (min 44px), and collapse filters into slide-over drawers.",
+    "layout_reflow": {
+      "hero": "Mobile: Single vertical column with overlay typography at base; Desktop: Asymmetric multi-layer grid with floating image cards.",
+      "product_grid": "Mobile: grid-cols-2 gap-3; Tablet: grid-cols-3 gap-6; Desktop: grid-cols-4 gap-8.",
+      "cart_checkout": "Mobile: Stacked cart items + sticky bottom checkout bar; Desktop: 2-column layout (items left, summary sticky right).",
+      "admin": "Mobile: Stacked stats + scrollable data table with sticky first column; Desktop: 4-column density bento layout."
+    },
+    "typography_scale_mobile": {
+      "hero_h1": "text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter leading-none",
+      "section_h2": "text-2xl sm:text-3xl lg:text-4xl font-bold uppercase tracking-tight",
+      "product_title": "text-sm sm:text-base font-medium tracking-wide",
+      "price": "text-sm sm:text-base font-mono font-bold text-white",
+      "body": "text-sm sm:text-base leading-relaxed text-zinc-300"
+    },
+    "overflow_guard": "w-full max-w-full overflow-x-hidden",
+    "tap_targets": "min-h-[44px] min-w-[44px] px-4 py-3 flex items-center justify-center"
+  },
+  "colors": {
+    "mode": "dark",
+    "palette": {
+      "background_main": "#0D0D0F",
+      "background_card": "#121215",
+      "background_elevated": "#18181B",
+      "background_input": "#1C1C20",
+      "typography_primary": "#FAFAFA",
+      "typography_secondary": "#A1A1AA",
+      "typography_muted": "#71717A",
+      "accent_red": "#E60023",
+      "accent_red_hover": "#FF1E27",
+      "accent_red_glow": "rgba(230, 0, 35, 0.25)",
+      "border_subtle": "#27272A",
+      "border_strong": "#3F3F46",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "destructive": "#EF4444"
+    },
+    "rules": {
+      "tinted_greys": "Never use pure #000000 or neutral #808080. All dark backgrounds are warm charcoal tinted (#0D0D0F / #121215) and borders are zinc dark (#27272A).",
+      "accent_usage": "Use Electric Red (#E60023) strictly for key conversion triggers: primary CTAs, sale badges, active filter tab line, cart item counter, floating WhatsApp indicator, and promotional banners.",
+      "contrast_compliance": "White typography (#FAFAFA) over #0D0D0F guarantees APCA AAA contrast. Red text on dark is minimum 16px bold or enclosed in pill badges."
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Syne, sans-serif (Google Font: Syne 700/800)",
+      "body": "Plus Jakarta Sans, sans-serif (Google Font: Plus Jakarta Sans 400/500/600)",
+      "mono": "JetBrains Mono, monospace (Google Font: JetBrains Mono 500/700 for prices, SKUs, badges)"
+    },
+    "google_font_import": "@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');",
+    "hierarchy": {
+      "h1": "font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tighter text-white leading-[0.9]",
+      "h2": "font-heading text-2xl sm:text-3xl lg:text-4xl font-bold uppercase tracking-tight text-white leading-tight",
+      "h3": "font-heading text-xl sm:text-2xl font-bold text-white tracking-normal",
+      "body_large": "font-body text-base sm:text-lg text-zinc-300 leading-relaxed",
+      "body": "font-body text-sm sm:text-base text-zinc-400 leading-normal",
+      "caption": "font-mono text-xs uppercase tracking-widest text-zinc-500",
+      "badge": "font-mono text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-none"
+    }
+  },
+  "spacing_and_layout": {
+    "padding_scale": {
+      "container_mobile": "px-4 py-6",
+      "container_desktop": "px-8 py-16 lg:px-12 lg:py-24",
+      "card_internal": "p-4 sm:p-6"
+    },
+    "grid_modes": {
+      "marketing_bento": "grid grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8",
+      "product_catalog": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6",
+      "admin_dashboard": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+    }
+  },
+  "component_styles": {
+    "header": {
+      "style": "fixed top-0 left-0 right-0 z-50 bg-[#0D0D0F]/85 backdrop-blur-xl border-b border-[#27272A] transition-all duration-300",
+      "logo": "font-heading text-2xl sm:text-3xl font-extrabold tracking-tighter text-white hover:text-[#E60023] transition-colors flex items-center gap-2",
+      "nav_link": "font-body text-xs sm:text-sm uppercase tracking-wider text-zinc-300 hover:text-white transition-colors relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-[#E60023] hover:after:w-full after:transition-all",
+      "cart_trigger": "relative p-2 text-white hover:text-[#E60023] transition-colors"
+    },
+    "buttons": {
+      "primary": "bg-[#E60023] hover:bg-[#FF1E27] text-white font-body font-bold text-sm uppercase tracking-wider px-6 py-3.5 rounded-none transition-all duration-200 shadow-[0_0_20px_rgba(230,0,35,0.3)] hover:shadow-[0_0_30px_rgba(250,30,39,0.5)] active:scale-[0.98] flex items-center justify-center gap-2",
+      "secondary": "bg-[#18181B] hover:bg-[#27272A] border border-[#3F3F46] text-white font-body font-semibold text-sm uppercase tracking-wider px-6 py-3.5 rounded-none transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2",
+      "ghost": "bg-transparent hover:bg-[#18181B] text-zinc-300 hover:text-white border border-transparent hover:border-[#27272A] font-body text-xs uppercase tracking-wider px-4 py-2 transition-all"
+    },
+    "cards": {
+      "product": "group relative bg-[#121215] border border-[#27272A] hover:border-[#E60023]/60 transition-all duration-300 flex flex-col overflow-hidden",
+      "category": "group relative h-[280px] sm:h-[360px] bg-[#121215] border border-[#27272A] overflow-hidden cursor-pointer",
+      "admin_widget": "bg-[#121215] border border-[#27272A] p-5 flex flex-col justify-between"
+    },
+    "inputs": {
+      "field": "w-full bg-[#1C1C20] border border-[#27272A] focus:border-[#E60023] text-white placeholder-zinc-500 text-sm px-4 py-3 rounded-none outline-none transition-all focus:ring-1 focus:ring-[#E60023]",
+      "select": "w-full bg-[#1C1C20] border border-[#27272A] focus:border-[#E60023] text-white text-sm px-4 py-3 rounded-none outline-none transition-all"
+    },
+    "whatsapp_float": {
+      "style": "fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20ba5a] text-black font-bold p-3.5 rounded-full shadow-[0_0_25px_rgba(37,211,102,0.4)] transition-all hover:scale-110 flex items-center justify-center"
+    }
+  },
+  "hero_and_carousel": {
+    "layout": "Relative full-width hero section with stacked dark editorial images, gradient overlay (from-[#0D0D0F] via-black/40 to-transparent), large overlapping heading 'URBAN / TECH / ESSENTIALS', and kinetic quick shop CTAs.",
+    "marquee_ticker": "Top promo banner: 'ENVÍO GRATIS A TODO EL PAÍS EN COMPRAS SUPERIORES A $80.000 — 3 Y 6 CUOTAS SIN INTERÉS — 15% OFF EN TRANSFERENCIA BANCARIA' in font-mono text-xs uppercase bg-[#E60023] text-white py-2 overflow-hidden whitespace-nowrap"
+  },
+  "product_card_design": {
+    "image_aspect": "aspect-[3/4] w-full object-cover bg-zinc-900 group-hover:scale-105 transition-transform duration-500 ease-out",
+    "badge_discount": "absolute top-3 left-3 bg-[#E60023] text-white font-mono text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider z-10",
+    "favorite_button": "absolute top-3 right-3 p-2 bg-black/60 backdrop-blur-md text-white hover:text-[#E60023] transition-colors rounded-full z-10",
+    "quick_add_overlay": "absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center",
+    "price_format": "font-mono font-bold text-white text-base tracking-tight"
+  },
+  "admin_dashboard_aesthetic": {
+    "vibe": "Command-center high density tactical aesthetic with near-black cards, crisp border grid lines, white metric callouts, and electric red active states.",
+    "sidebar": "w-64 bg-[#0D0D0F] border-r border-[#27272A] p-4 flex flex-col gap-2",
+    "stat_card": "bg-[#121215] border border-[#27272A] p-4 flex flex-col justify-between",
+    "table": "w-full border-collapse border border-[#27272A] text-left text-sm text-zinc-300",
+    "table_header": "bg-[#18181B] border-b border-[#27272A] font-mono text-xs uppercase text-zinc-400 p-3",
+    "table_row": "border-b border-[#27272A]/60 hover:bg-[#18181B]/50 transition-colors"
+  },
+  "motion_and_animations": {
+    "framer_motion_defaults": {
+      "fade_up": {
+        "initial": { "opacity": 0, "y": 20 },
+        "animate": { "opacity": 1, "y": 0 },
+        "transition": { "duration": 0.4, "ease": "easeOut" }
+      },
+      "stagger_container": {
+        "animate": { "transition": { "staggerChildren": 0.08 } }
+      },
+      "card_hover": {
+        "whileHover": { "y": -4, "transition": { "duration": 0.2 } }
+      }
+    }
+  },
+  "image_urls": {
+    "hero": [
+      {
+        "url": "https://images.unsplash.com/photo-1784887879910-a93ffb442b9a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwzfHx1cmJhbiUyMHN0cmVldHdlYXIlMjBkYXJrJTIwZmFzaGlvbiUyMHNuZWFrZXJzfGVufDB8fHx8MTc5MTAzMjU0M3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Editorial Dark Streetwear Sneakers"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1574083119440-c338e49a6bf5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHw0fHxtaW5pbWFsJTIwZGFyayUyMGNsb3RoaW5nJTIwYXBwYXJlbCUyMHVyYmFuJTIwamFja2V0JTIwbW9kZWx8ZW58MHx8fHwxNzkxMDMyNTQ3fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Editorial Fashion Model Zip Jacket"
+      }
+    ],
+    "categories": {
+      "footwear": "https://images.unsplash.com/photo-1784887879910-a93ffb442b9a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwzfHx1cmJhbiUyMHN0cmVldHdlYXIlMjBkYXJrJTIwZmFzaGlvbiUyMHNuZWFrZXJzfGVufDB8fHx8MTc5MTAzMjU0M3ww&ixlib=rb-4.1.0&q=85",
+      "technology": "https://images.unsplash.com/photo-1585298723682-7115561c51b7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwyfHxwcmVtaXVtJTIwdGVjaCUyMGdhZGdldHMlMjB3aXJlbGVzcyUyMGhlYWRwaG9uZXMlMjBkYXJrfGVufDB8fHx8MTc5MTAzMjU0M3ww&ixlib=rb-4.1.0&q=85",
+      "accessories": "https://images.unsplash.com/photo-1772949399808-7020b02896b9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MDV8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBsdXh1cnklMjB3YXRjaCUyMGFjY2Vzc29yaWVzJTIwZGFyayUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzkxMDMyNTQ3fDA&ixlib=rb-4.1.0&q=85",
+      "clothing": "https://images.unsplash.com/photo-1611261730549-03fea1555966?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwzfHxtaW5pbWFsJTIwZGFyayUyMGNsb3RoaW5nJTIwYXBwYXJlbCUyMHVyYmFuJTIwamFja2V0JTIwbW9kZWx8ZW58MHx8fHwxNzkxMDMyNTQ3fDA&ixlib=rb-4.1.0&q=85",
+      "home": "https://images.unsplash.com/photo-1571898223382-0aa3499f0f2a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwZGFyayUyMGhvbWUlMjBkZWNvciUyMHByb2R1Y3QlMjBjaGFpciUyMGxhbXB8ZW58MHx8fHwxNzkxMDMyNTQ3fDA&ixlib=rb-4.1.0&q=85"
+    },
+    "demo_products": [
+      {
+        "id": "prod_1",
+        "name": "Zapatillas Nike SB Dunk Dark Edition",
+        "category": "footwear",
+        "price": 145000,
+        "original_price": 180000,
+        "image": "https://images.unsplash.com/photo-1784887879910-a93ffb442b9a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwzfHx1cmJhbiUyMHN0cmVldHdlYXIlMjBkYXJrJTIwZmFzaGlvbiUyMHNuZWFrZXJzfGVufDB8fHx8MTc5MTAzMjU0M3ww&ixlib=rb-4.1.0&q=85",
+        "badge": "19% OFF"
+      },
+      {
+        "id": "prod_2",
+        "name": "Auriculares Wireless Studio Noise Cancelling",
+        "category": "technology",
+        "price": 210000,
+        "original_price": 250000,
+        "image": "https://images.unsplash.com/photo-1585298723682-7115561c51b7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwyfHxwcmVtaXVtJTIwdGVjaCUyMGdhZGdldHMlMjB3aXJlbGVzcyUyMGhlYWRwaG9uZXMlMjBkYXJrfGVufDB8fHx8MTc5MTAzMjU0M3ww&ixlib=rb-4.1.0&q=85",
+        "badge": "MÁS VENDIDO"
+      },
+      {
+        "id": "prod_3",
+        "name": "Reloj Chrono Gold Velvet Edition",
+        "category": "accessories",
+        "price": 320000,
+        "original_price": 390000,
+        "image": "https://images.unsplash.com/photo-1772949399808-7020b02896b9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MDV8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBsdXh1cnklMjB3YXRjaCUyMGFjY2Vzc29yaWVzJTIwZGFyayUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzkxMDMyNTQ3fDA&ixlib=rb-4.1.0&q=85",
+        "badge": "EDICIÓN LIMITADA"
+      },
+      {
+        "id": "prod_4",
+        "name": "Campera Urban Tech Waterproof Black",
+        "category": "clothing",
+        "price": 189000,
+        "original_price": 220000,
+        "image": "https://images.unsplash.com/photo-1574083119440-c338e49a6bf5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHw0fHxtaW5pbWFsJTIwZGFyayUyMGNsb3RoaW5nJTIwYXBwYXJlbCUyMHVyYmFuJTIwamFja2V0JTIwbW9kZWx8ZW58MHx8fHwxNzkxMDMyNTQ3fDA&ixlib=rb-4.1.0&q=85",
+        "badge": "NUEVO"
+      },
+      {
+        "id": "prod_5",
+        "name": "Lámpara Minimalist Industrial Chair & Light",
+        "category": "home",
+        "price": 98000,
+        "original_price": 115000,
+        "image": "https://images.unsplash.com/photo-1571898223382-0aa3499f0f2a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwZGFyayUyMGhvbWUlMjBkZWNvciUyMHByb2R1Y3QlMjBjaGFpciUyMGxhbXB8ZW58MHx8fHwxNzkxMDMyNTQ3fDA&ixlib=rb-4.1.0&q=85",
+        "badge": "3 CUOTAS SIN INTERÉS"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Ensure all components follow the dark editorial aesthetic: #0D0D0F background, #FAFAFA typography, and #E60023 electric red accents.",
+    "Implement Google Fonts import (@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');) inside index.css.",
+    "Ensure ALL key interactive elements have explicit data-testid attributes (e.g., data-testid='hero-cta-button', data-testid='product-card-prod_1', data-testid='add-to-cart-button', data-testid='checkout-transferencia-option').",
+    "DO NOT make transparent header over white backgrounds or leave transparent dropdown backgrounds. Use backdrop-blur-xl with bg-[#0D0D0F]/90.",
+    "All pricing should be formatted in Argentine Pesos (e.g. $145.000,00 ARS or $145.000).",
+    "Keep mobile-first responsive design strictly implemented with proper grid steps (2 cols mobile, 4 cols desktop)."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
+    "data_testid_requirement": "MANDATORY: Every button, link, form input, modal, dropdown, card, and tab MUST include a data-testid attribute in kebab-case.",
+    "no_transparent_headers": "Header and overlay menus MUST have bg-[#0D0D0F]/85 or bg-[#121215] with backdrop-blur-xl.",
+    "no_generic_saas_look": "Avoid standard blue/purple gradients, generic rounded white cards, or centered hero text. Use asymmetric dark grid, bold red accents, and high contrast typography."
+  }
+}
