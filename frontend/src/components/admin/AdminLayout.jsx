@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, Tags, ShoppingBag, Users, Image, Settings, LogOut, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Package, Tags, ShoppingBag, Users, Image, Settings, LogOut, ExternalLink, Ticket } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const nav = [
@@ -10,6 +10,7 @@ const nav = [
   { to: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag },
   { to: "/admin/clientes", label: "Clientes", icon: Users },
   { to: "/admin/carrusel", label: "Carrusel", icon: Image },
+  { to: "/admin/cupones", label: "Cupones", icon: Ticket },
   { to: "/admin/configuracion", label: "Configuración", icon: Settings },
 ];
 

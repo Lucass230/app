@@ -11,6 +11,7 @@ import Cart from "@/pages/Cart";
 import Checkout from "@/pages/Checkout";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import AuthCallback from "@/pages/AuthCallback";
 import Account from "@/pages/Account";
 import Favorites from "@/pages/Favorites";
 import OurStory from "@/pages/OurStory";
@@ -21,6 +22,7 @@ import AdminCategories from "@/pages/admin/Categories";
 import AdminOrders from "@/pages/admin/Orders";
 import AdminCustomers from "@/pages/admin/Customers";
 import AdminCarousel from "@/pages/admin/Carousel";
+import AdminCoupons from "@/pages/admin/Coupons";
 import AdminSettings from "@/pages/admin/Settings";
 
 export default function App() {
@@ -38,6 +40,7 @@ export default function App() {
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/login" element={<Login />} />
               <Route path="/registro" element={<Register />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/cuenta" element={<Account />} />
               <Route path="/favoritos" element={<Favorites />} />
               <Route path="/nuestra-historia" element={<OurStory />} />
@@ -49,6 +52,7 @@ export default function App() {
               <Route path="pedidos" element={<AdminOrders />} />
               <Route path="clientes" element={<AdminCustomers />} />
               <Route path="carrusel" element={<AdminCarousel />} />
+              <Route path="cupones" element={<AdminCoupons />} />
               <Route path="configuracion" element={<AdminSettings />} />
             </Route>
           </Routes>

@@ -5,12 +5,19 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 import os
+import re
+import ipaddress
 import uuid
 import logging
+import asyncio
 import bcrypt
 import jwt
+import httpx
 import requests as http_requests
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, UploadFile, File, Query, Header
+from html import escape
+from html.parser import HTMLParser
+from urllib.parse import urlparse
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, UploadFile, File, Query, Header, BackgroundTasks
 from fastapi.responses import Response as FastResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -162,6 +169,18 @@ class GoogleAuthIn(BaseModel):
     name: str
     picture: Optional[str] = None
 
+class GoogleSessionIn(BaseModel):
+    session_id: str
+
+class CouponIn(BaseModel):
+    code: str
+    discount_percent: float = 0
+    discount_amount: float = 0
+    max_uses: int = 0  # 0 = unlimited
+    expires_at: Optional[str] = None  # ISO date
+    active: bool = True
+    description: Optional[str] = ""
+
 class CategoryIn(BaseModel):
     name: str
     slug: str
@@ -218,6 +237,7 @@ class CheckoutIn(BaseModel):
     delivery_address: Optional[str] = ""
     notes: Optional[str] = ""
     redeem_points: int = 0
+    coupon_code: Optional[str] = None
 
 class OrderStatusIn(BaseModel):
     status: str
@@ -237,6 +257,160 @@ class SettingsIn(BaseModel):
 # ---------- Pricing ----------
 def final_price(price: float, discount: float) -> float:
     return round(price * (1 - (discount or 0) / 100), 2)
+
+# ---------- Email (Emergent managed Resend) ----------
+EMAIL_BASE_URL = "https://integrations.emergentagent.com"
+EMAIL_KEY = os.environ.get("EMERGENT_EMAIL_KEY", "")
+EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "CATTO")
+
+_SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
+_CRED_ASK = ("reply with your password", "reply with the code", "send your password", "cvv",
+             "send us your password", "enter your password below", "confirm your card number",
+             "your full card number", "seed phrase", "recovery phrase", "verify your card",
+             "social security number", "confirm your bank details")
+_HOSTISH = re.compile(r"\b(?:https?://)?((?:[a-z0-9-]+\.)+[a-z]{2,})", re.I)
+
+def _host_ok(host: str) -> bool:
+    if not host or "xn--" in host:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return False
+    except ValueError:
+        pass
+    return not any(host == s or host.endswith("." + s) for s in _SHORTENERS)
+
+def _same_site(shown: str, real: str) -> bool:
+    return shown == real or real.endswith("." + shown) or shown.endswith("." + real)
+
+class _EmailScan(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags, self.urls, self.anchors = set(), [], []
+        self._href, self._text = None, []
+    def handle_starttag(self, tag, attrs):
+        self.tags.add(tag.lower())
+        self.urls += [v for k, v in attrs if k.lower() in ("href", "src") and v]
+        if tag.lower() == "a":
+            self._href = dict((k.lower(), v) for k, v in attrs).get("href")
+            self._text = []
+    def handle_data(self, data):
+        if self._href is not None:
+            self._text.append(data)
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._href is not None:
+            self.anchors.append((self._href, "".join(self._text)))
+            self._href, self._text = None, []
+
+def _assert_safe_email(subject: str, html: str) -> None:
+    scan = _EmailScan(); scan.feed(html)
+    if scan.tags & {"form", "input", "textarea", "select"}:
+        raise ValueError("No forms or input fields in email (G2)")
+    body = f"{subject}\n{html}".lower()
+    for p in _CRED_ASK:
+        if p in body:
+            raise ValueError(f"Email asks the recipient for credentials: {p!r} (G2)")
+    for url in scan.urls:
+        low = url.strip().lower()
+        if low.startswith(("mailto:", "tel:", "cid:", "#")):
+            continue
+        if not low.startswith("https://"):
+            raise ValueError(f"Email links/assets must be absolute https: {url!r} (G3)")
+        host = urlparse(low).hostname or ""
+        if not _host_ok(host) or urlparse(low).username is not None:
+            raise ValueError(f"Shortened, numeric-host or credential-bearing URL: {url!r} (G3)")
+    for href, text in scan.anchors:
+        real = urlparse(href.strip().lower()).hostname or ""
+        if not real:
+            continue
+        for m in _HOSTISH.finditer(text):
+            if not _same_site(m.group(1).lower(), real):
+                raise ValueError(f"Anchor text {m.group(1)!r} ≠ real link host {real!r} (G3)")
+
+async def send_email(*, to: str, subject: str, html: str) -> Optional[str]:
+    if not EMAIL_KEY:
+        logger.warning("EMERGENT_EMAIL_KEY not set — skipping email")
+        return None
+    _assert_safe_email(subject, html)
+    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"{EMAIL_BASE_URL}/api/v1/email/send",
+                headers={"X-Email-Key": EMAIL_KEY},
+                json=payload,
+            )
+        resp.raise_for_status()
+        return resp.json().get("id")
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Email send failed: {e.response.status_code} body={e.response.text[:300]}")
+        return None
+    except Exception as e:
+        logger.error(f"Email send failed: {e}")
+        return None
+
+def _fmt_ars(n: float) -> str:
+    try:
+        return "$" + f"{int(round(n)):,}".replace(",", ".")
+    except Exception:
+        return f"${n}"
+
+def _order_html(order: dict) -> str:
+    items_rows = "".join(
+        f'<tr><td style="padding:8px 0;color:#FAFAFA;font-family:Arial,sans-serif;font-size:14px">'
+        f'{it["quantity"]}× {escape(it["name"])}'
+        + ("".join(f' <span style="color:#A1A1AA;font-size:12px">· {escape(k)}: {escape(str(v))}</span>'
+                   for k, v in [("Color", it.get("variant_color")), ("Talle", it.get("variant_size"))] if v))
+        + f'</td><td style="padding:8px 0;color:#FAFAFA;font-family:Arial,sans-serif;font-size:14px;text-align:right">{_fmt_ars(it["final_price"] * it["quantity"])}</td></tr>'
+        for it in order["items"]
+    )
+    coupon_row = (f'<tr><td style="padding:4px 0;color:#E60023;font-family:Arial,sans-serif;font-size:14px">Cupón ({escape(order.get("coupon_code") or "")})</td>'
+                  f'<td style="padding:4px 0;color:#E60023;font-family:Arial,sans-serif;font-size:14px;text-align:right">-{_fmt_ars(order.get("coupon_discount", 0))}</td></tr>'
+                  if order.get("coupon_discount", 0) > 0 else "")
+    points_row = (f'<tr><td style="padding:4px 0;color:#E60023;font-family:Arial,sans-serif;font-size:14px">Puntos ({order["redeem_points"]})</td>'
+                  f'<td style="padding:4px 0;color:#E60023;font-family:Arial,sans-serif;font-size:14px;text-align:right">-{_fmt_ars(order["redeem_discount"])}</td></tr>'
+                  if order.get("redeem_discount", 0) > 0 else "")
+    discount_row = (f'<tr><td style="padding:4px 0;color:#A1A1AA;font-family:Arial,sans-serif;font-size:14px">Descuento</td>'
+                    f'<td style="padding:4px 0;color:#A1A1AA;font-family:Arial,sans-serif;font-size:14px;text-align:right">-{_fmt_ars(order["discount"])}</td></tr>'
+                    if order.get("discount", 0) > 0 else "")
+    return f"""<!doctype html><html><body style="margin:0;padding:0;background:#0D0D0F">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0D0D0F">
+<tr><td align="center" style="padding:40px 20px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#121215;border:1px solid #27272A">
+<tr><td style="padding:28px 32px;border-bottom:1px solid #27272A">
+<div style="font-family:Arial,sans-serif;font-size:28px;font-weight:900;color:#FAFAFA;letter-spacing:-1px">CATTO<span style="color:#E60023">.</span></div>
+</td></tr>
+<tr><td style="padding:32px">
+<p style="font-family:Arial,sans-serif;font-size:12px;color:#71717A;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px">Confirmación de pedido</p>
+<h1 style="font-family:Arial,sans-serif;font-size:28px;color:#FAFAFA;margin:0 0 8px;letter-spacing:-0.5px">¡Gracias, {escape(order["customer"]["first_name"])}!</h1>
+<p style="font-family:Arial,sans-serif;font-size:14px;color:#A1A1AA;margin:0 0 24px">Tu pedido ya está registrado. Lucas te contactará por WhatsApp para coordinar.</p>
+<div style="background:#0D0D0F;border:1px solid #27272A;padding:16px;margin:0 0 24px">
+<p style="font-family:'Courier New',monospace;font-size:12px;color:#71717A;letter-spacing:1.5px;text-transform:uppercase;margin:0 0 4px">N° Pedido</p>
+<p style="font-family:'Courier New',monospace;font-size:20px;color:#FAFAFA;margin:0;font-weight:bold">{escape(order["order_number"])}</p>
+</div>
+<table role="presentation" width="100%" style="border-collapse:collapse">
+{items_rows}
+<tr><td colspan="2" style="border-top:1px solid #27272A;padding:12px 0 0"></td></tr>
+<tr><td style="padding:4px 0;color:#A1A1AA;font-family:Arial,sans-serif;font-size:14px">Subtotal</td>
+<td style="padding:4px 0;color:#A1A1AA;font-family:Arial,sans-serif;font-size:14px;text-align:right">{_fmt_ars(order["subtotal"])}</td></tr>
+{discount_row}
+{coupon_row}
+{points_row}
+<tr><td style="padding:12px 0 0;color:#FAFAFA;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;border-top:1px solid #27272A">Total</td>
+<td style="padding:12px 0 0;color:#FAFAFA;font-family:Arial,sans-serif;font-size:18px;font-weight:bold;text-align:right;border-top:1px solid #27272A">{_fmt_ars(order["total"])}</td></tr>
+</table>
+<div style="margin:24px 0 0;padding:16px;background:#0D0D0F;border:1px solid #27272A">
+<p style="font-family:Arial,sans-serif;font-size:13px;color:#A1A1AA;margin:0 0 4px"><strong style="color:#FAFAFA">Pago:</strong> {escape(order["payment_method"])}</p>
+<p style="font-family:Arial,sans-serif;font-size:13px;color:#A1A1AA;margin:0 0 4px"><strong style="color:#FAFAFA">Entrega:</strong> {escape("Punto de encuentro" if order["delivery_method"] == "punto_encuentro" else "Uber (a cargo del cliente)")}</p>
+<p style="font-family:Arial,sans-serif;font-size:13px;color:#E60023;margin:8px 0 0"><strong>+{order["points_earned"]} puntos CATTO</strong> ganados con este pedido</p>
+</div>
+</td></tr>
+<tr><td style="padding:20px 32px;border-top:1px solid #27272A;background:#0D0D0F">
+<p style="font-family:Arial,sans-serif;font-size:11px;color:#71717A;margin:0;letter-spacing:1px;text-transform:uppercase">CATTO · Tienda independiente · Nunca te pedimos tu contraseña por email</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>"""
 
 # ---------- Auth routes ----------
 @api.post("/auth/register")
@@ -295,6 +469,50 @@ async def google_auth(payload: GoogleAuthIn, response: Response):
             "created_at": now_iso(),
         }
         await db.users.insert_one(user)
+    token = make_token(user["id"], email, user.get("role", "customer"))
+    set_auth_cookie(response, token)
+    return {"token": token, "user": clean(dict(user))}
+
+@api.post("/auth/google/session")
+async def google_session_exchange(payload: GoogleSessionIn, response: Response):
+    """Exchange Emergent session_id for user profile + issue local JWT.
+    REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH"""
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": payload.session_id},
+            )
+        if r.status_code != 200:
+            raise HTTPException(401, "Sesión inválida")
+        data = r.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Google session exchange error: {e}")
+        raise HTTPException(502, "Error al validar sesión Google")
+
+    email = (data.get("email") or "").lower()
+    name = data.get("name") or email.split("@")[0]
+    picture = data.get("picture") or ""
+    if not email:
+        raise HTTPException(400, "Sesión sin email")
+
+    user = await db.users.find_one({"email": email})
+    if not user:
+        uid = new_id()
+        parts = name.split(" ", 1)
+        user = {
+            "id": uid, "email": email, "password_hash": "",
+            "first_name": parts[0], "last_name": parts[1] if len(parts) > 1 else "",
+            "phone": "", "address": "", "role": "customer", "points": 0,
+            "picture": picture, "created_at": now_iso(),
+        }
+        await db.users.insert_one(user)
+    else:
+        if picture and not user.get("picture"):
+            await db.users.update_one({"id": user["id"]}, {"$set": {"picture": picture}})
+
     token = make_token(user["id"], email, user.get("role", "customer"))
     set_auth_cookie(response, token)
     return {"token": token, "user": clean(dict(user))}
@@ -434,6 +652,75 @@ async def delete_slide(sid: str, _: dict = Depends(require_admin)):
     await db.carousel.delete_one({"id": sid})
     return {"ok": True}
 
+# ---------- Coupons ----------
+@api.get("/admin/coupons")
+async def list_coupons(_: dict = Depends(require_admin)):
+    docs = await db.coupons.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return docs
+
+@api.post("/admin/coupons")
+async def create_coupon(payload: CouponIn, _: dict = Depends(require_admin)):
+    code = payload.code.strip().upper()
+    if await db.coupons.find_one({"code": code}):
+        raise HTTPException(400, "El código ya existe")
+    doc = payload.model_dump()
+    doc["code"] = code
+    doc["id"] = new_id()
+    doc["uses"] = 0
+    doc["created_at"] = now_iso()
+    await db.coupons.insert_one(doc)
+    return clean(doc)
+
+@api.put("/admin/coupons/{cid}")
+async def update_coupon(cid: str, payload: CouponIn, _: dict = Depends(require_admin)):
+    update = payload.model_dump()
+    update["code"] = update["code"].strip().upper()
+    await db.coupons.update_one({"id": cid}, {"$set": update})
+    return await db.coupons.find_one({"id": cid}, {"_id": 0})
+
+@api.delete("/admin/coupons/{cid}")
+async def delete_coupon(cid: str, _: dict = Depends(require_admin)):
+    await db.coupons.delete_one({"id": cid})
+    return {"ok": True}
+
+async def validate_coupon(code: str, subtotal_after_discount: float) -> dict:
+    """Return {'coupon': doc, 'discount': amount} or raise."""
+    coupon = await db.coupons.find_one({"code": code.strip().upper()}, {"_id": 0})
+    if not coupon or not coupon.get("active", True):
+        raise HTTPException(400, "Cupón inválido")
+    if coupon.get("expires_at"):
+        try:
+            exp = datetime.fromisoformat(coupon["expires_at"].replace("Z", "+00:00"))
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if exp < datetime.now(timezone.utc):
+                raise HTTPException(400, "Cupón vencido")
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+    if coupon.get("max_uses", 0) and coupon.get("uses", 0) >= coupon["max_uses"]:
+        raise HTTPException(400, "Cupón agotado")
+    discount = 0.0
+    if coupon.get("discount_percent", 0) > 0:
+        discount = round(subtotal_after_discount * coupon["discount_percent"] / 100, 2)
+    elif coupon.get("discount_amount", 0) > 0:
+        discount = min(coupon["discount_amount"], subtotal_after_discount)
+    return {"coupon": coupon, "discount": discount}
+
+@api.post("/coupons/validate")
+async def coupons_validate(payload: dict, user: dict = Depends(get_current_user)):
+    code = (payload.get("code") or "").strip()
+    subtotal = float(payload.get("subtotal") or 0)
+    if not code:
+        raise HTTPException(400, "Ingresá un código")
+    result = await validate_coupon(code, subtotal)
+    c = result["coupon"]
+    return {"code": c["code"], "discount": result["discount"],
+            "discount_percent": c.get("discount_percent", 0),
+            "discount_amount": c.get("discount_amount", 0),
+            "description": c.get("description", "")}
+
 # ---------- Favorites ----------
 @api.get("/favorites")
 async def list_favorites(user: dict = Depends(get_current_user)):
@@ -510,7 +797,7 @@ async def get_settings():
     return s or {}
 
 @api.post("/orders/checkout")
-async def checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
+async def checkout(payload: CheckoutIn, background: BackgroundTasks, user: dict = Depends(get_current_user)):
     settings = await get_settings()
     if payload.payment_method == "tarjeta" and not settings.get("card_payment_enabled", False):
         raise HTTPException(400, "Pago con tarjeta próximamente deshabilitado")
@@ -540,14 +827,26 @@ async def checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
             "quantity": qty, "unit_price": price, "final_price": fp, "line_total": line_total,
         })
 
+    total_before_extras = subtotal - discount_total
+
+    # Coupon
+    coupon_code = None
+    coupon_discount = 0.0
+    coupon_doc = None
+    if payload.coupon_code:
+        res = await validate_coupon(payload.coupon_code, total_before_extras)
+        coupon_doc = res["coupon"]
+        coupon_discount = res["discount"]
+        coupon_code = coupon_doc["code"]
+    total_after_coupon = max(0, total_before_extras - coupon_discount)
+
     # Points redemption
-    points_rate = settings.get("points_redeem_rate", 10)  # 1 point = X pesos
+    points_rate = settings.get("points_redeem_rate", 10)
     points_per_peso = settings.get("points_per_peso", 0.001)
     redeem_points = min(payload.redeem_points or 0, user.get("points", 0))
     redeem_discount = round(redeem_points * points_rate, 2) if redeem_points > 0 else 0
-    total_before_redeem = subtotal - discount_total
-    redeem_discount = min(redeem_discount, total_before_redeem)
-    total = round(total_before_redeem - redeem_discount, 2)
+    redeem_discount = min(redeem_discount, total_after_coupon)
+    total = round(total_after_coupon - redeem_discount, 2)
     points_earned = int(round(total * points_per_peso)) if total > 0 else 0
 
     order_number = await next_order_number()
@@ -562,6 +861,7 @@ async def checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
         "items": order_items,
         "subtotal": round(subtotal, 2),
         "discount": round(discount_total, 2),
+        "coupon_code": coupon_code, "coupon_discount": coupon_discount,
         "redeem_points": redeem_points, "redeem_discount": redeem_discount,
         "total": total,
         "points_earned": points_earned,
@@ -574,7 +874,10 @@ async def checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
     }
     await db.orders.insert_one(order)
 
-    # Points: deduct redemption, award earned (as pending until Confirmado by admin, but keep simple)
+    if coupon_doc:
+        await db.coupons.update_one({"id": coupon_doc["id"]}, {"$inc": {"uses": 1}})
+
+    # Points: deduct redemption, award earned
     if redeem_points > 0:
         await db.users.update_one({"id": user["id"]}, {"$inc": {"points": -redeem_points}})
         await db.points_tx.insert_one({"id": new_id(), "user_id": user["id"], "type": "redeem", "amount": -redeem_points, "order_id": order["id"], "created_at": now_iso()})
@@ -584,6 +887,14 @@ async def checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
 
     # Clear cart
     await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": [], "updated_at": now_iso()}})
+
+    # Send confirmation email (non-blocking)
+    try:
+        html = _order_html(order)
+        subject = f"CATTO — Confirmación de pedido {order['order_number']}"
+        background.add_task(send_email, to=user["email"], subject=subject, html=html)
+    except Exception as e:
+        logger.error(f"Could not schedule confirmation email: {e}")
 
     return {"order": clean(order)}
 

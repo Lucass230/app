@@ -14,6 +14,9 @@ export default function Checkout() {
   const [delivery, setDelivery] = useState("punto_encuentro");
   const [address, setAddress] = useState("");
   const [redeem, setRedeem] = useState(0);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(null); // {code, discount}
+  const [couponLoading, setCouponLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -23,8 +26,25 @@ export default function Checkout() {
 
   const points = user?.points || 0;
   const points_rate = settings.points_redeem_rate || 10;
-  const redeemDiscount = Math.min(redeem * points_rate, total);
-  const finalTotal = Math.max(0, total - redeemDiscount);
+  const couponDiscount = couponApplied?.discount || 0;
+  const afterCoupon = Math.max(0, total - couponDiscount);
+  const redeemDiscount = Math.min(redeem * points_rate, afterCoupon);
+  const finalTotal = Math.max(0, afterCoupon - redeemDiscount);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const { data } = await api.post("/coupons/validate", { code: couponCode.trim(), subtotal: total });
+      setCouponApplied(data);
+      toast.success(`Cupón ${data.code} aplicado`);
+    } catch (e) {
+      setCouponApplied(null);
+      toast.error(formatErr(e));
+    } finally { setCouponLoading(false); }
+  };
+
+  const removeCoupon = () => { setCouponApplied(null); setCouponCode(""); };
 
   const place = async () => {
     setLoading(true);
@@ -34,6 +54,7 @@ export default function Checkout() {
         delivery_method: delivery,
         delivery_address: address,
         redeem_points: redeem,
+        coupon_code: couponApplied?.code || null,
       });
       const o = data.order;
       await load();
@@ -66,6 +87,7 @@ export default function Checkout() {
         "━━━━━━━━━━━━━━━━",
         `Subtotal: ${formatARS(o.subtotal)}`,
         o.discount > 0 ? `Descuento: -${formatARS(o.discount)}` : null,
+        o.coupon_code ? `Cupón ${o.coupon_code}: -${formatARS(o.coupon_discount)}` : null,
         o.redeem_discount > 0 ? `Puntos canjeados (${o.redeem_points}): -${formatARS(o.redeem_discount)}` : null,
         `TOTAL: ${formatARS(o.total)}`,
         "━━━━━━━━━━━━━━━━",
@@ -149,6 +171,26 @@ export default function Checkout() {
               <input type="number" min="0" max={points} value={redeem} onChange={(e) => setRedeem(Math.max(0, Math.min(points, parseInt(e.target.value || 0))))} data-testid="redeem-points" className="w-full bg-[#1C1C20] border border-[#27272A] text-white text-sm px-4 py-3 outline-none" />
             </section>
           )}
+
+          <section>
+            <h2 className="font-mono text-xs uppercase tracking-widest text-zinc-500 mb-2">Cupón de descuento</h2>
+            {couponApplied ? (
+              <div className="flex items-center justify-between border border-[#E60023] bg-[#E60023]/5 px-4 py-3">
+                <div>
+                  <p className="font-mono text-sm font-bold text-white">{couponApplied.code}</p>
+                  <p className="font-mono text-[10px] uppercase text-[#E60023]">-{formatARS(couponApplied.discount)} aplicado</p>
+                </div>
+                <button onClick={removeCoupon} data-testid="remove-coupon" className="font-mono text-xs text-zinc-400 hover:text-[#E60023] uppercase tracking-widest">Quitar</button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} data-testid="coupon-input" placeholder="Ingresá tu código" className="flex-1 bg-[#1C1C20] border border-[#27272A] text-white text-sm px-4 py-3 outline-none uppercase tracking-wider" />
+                <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} data-testid="apply-coupon-btn" className="bg-[#18181B] border border-[#27272A] hover:border-white text-white font-body font-bold text-xs uppercase tracking-widest px-5">
+                  {couponLoading ? "..." : "Aplicar"}
+                </button>
+              </div>
+            )}
+          </section>
         </div>
 
         <aside className="h-fit border border-[#27272A] bg-[#121215] p-6 sticky top-20">
@@ -162,6 +204,7 @@ export default function Checkout() {
             ))}
             <div className="border-t border-[#27272A] pt-3 flex justify-between text-zinc-300"><span>Subtotal</span><span className="font-mono">{formatARS(subtotal)}</span></div>
             {discount > 0 && <div className="flex justify-between text-[#E60023]"><span>Descuento</span><span className="font-mono">-{formatARS(discount)}</span></div>}
+            {couponDiscount > 0 && <div className="flex justify-between text-[#E60023]"><span>Cupón {couponApplied.code}</span><span className="font-mono">-{formatARS(couponDiscount)}</span></div>}
             {redeemDiscount > 0 && <div className="flex justify-between text-[#E60023]"><span>Puntos</span><span className="font-mono">-{formatARS(redeemDiscount)}</span></div>}
             <div className="border-t border-[#27272A] pt-3 flex justify-between font-bold text-white text-lg"><span>Total</span><span className="font-mono">{formatARS(finalTotal)}</span></div>
           </div>
