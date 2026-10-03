@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Heart, Minus, Plus, ShoppingBag } from "lucide-react";
+import { Heart, Minus, Plus, ShoppingBag, Star } from "lucide-react";
 import { toast } from "sonner";
 import api, { formatARS, formatErr } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import ProductReviews from "@/components/ProductReviews";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -74,6 +75,14 @@ export default function ProductDetail() {
         <div>
           {p.brand && <span className="font-mono text-xs uppercase tracking-widest text-zinc-500">{p.brand}</span>}
           <h1 data-testid="product-name" className="font-heading text-3xl sm:text-5xl font-extrabold uppercase tracking-tighter text-white mt-2">{p.name}</h1>
+          {p.review_count > 0 && (
+            <div className="flex items-center gap-2 mt-3">
+              <div className="flex gap-0.5">
+                {[1,2,3,4,5].map(n => <Star key={n} size={14} fill={n <= Math.round(p.avg_rating) ? "#E60023" : "transparent"} stroke={n <= Math.round(p.avg_rating) ? "#E60023" : "#52525B"} />)}
+              </div>
+              <span className="font-mono text-xs text-zinc-400">{p.avg_rating.toFixed(1)} · {p.review_count} reseña{p.review_count === 1 ? "" : "s"}</span>
+            </div>
+          )}
           <div className="flex items-baseline gap-3 mt-4">
             <span data-testid="product-final-price" className="font-mono font-bold text-white text-3xl">{formatARS(p.final_price)}</span>
             {hasDiscount && <span className="font-mono text-base text-zinc-500 line-through">{formatARS(p.price)}</span>}
@@ -142,6 +151,7 @@ export default function ProductDetail() {
           )}
         </div>
       </div>
+      <ProductReviews product={p} />
     </div>
   );
 }

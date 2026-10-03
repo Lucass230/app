@@ -254,6 +254,12 @@ class SettingsIn(BaseModel):
     points_redeem_rate: Optional[float] = None  # pesos per point
     card_payment_enabled: Optional[bool] = None
 
+class ReviewIn(BaseModel):
+    rating: int
+    comment: Optional[str] = ""
+    image_url: Optional[str] = ""
+    order_id: str
+
 # ---------- Pricing ----------
 def final_price(price: float, discount: float) -> float:
     return round(price * (1 - (discount or 0) / 100), 2)
@@ -561,7 +567,19 @@ def enrich_product(p):
         return p
     p.pop("_id", None)
     p["final_price"] = final_price(p.get("price", 0), p.get("discount_percent", 0))
+    p["avg_rating"] = p.get("avg_rating", 0)
+    p["review_count"] = p.get("review_count", 0)
     return p
+
+async def recompute_product_rating(product_id: str):
+    pipeline = [{"$match": {"product_id": product_id}}, {"$group": {"_id": None, "avg": {"$avg": "$rating"}, "n": {"$sum": 1}}}]
+    agg = await db.reviews.aggregate(pipeline).to_list(1)
+    if agg:
+        avg = round(agg[0]["avg"], 1)
+        n = agg[0]["n"]
+    else:
+        avg, n = 0, 0
+    await db.products.update_one({"id": product_id}, {"$set": {"avg_rating": avg, "review_count": n}})
 
 @api.get("/products")
 async def list_products(
@@ -720,6 +738,79 @@ async def coupons_validate(payload: dict, user: dict = Depends(get_current_user)
             "discount_percent": c.get("discount_percent", 0),
             "discount_amount": c.get("discount_amount", 0),
             "description": c.get("description", "")}
+
+# ---------- Reviews ----------
+@api.get("/products/{pid}/reviews")
+async def product_reviews(pid: str):
+    docs = await db.reviews.find({"product_id": pid}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return docs
+
+@api.get("/reviews/eligible")
+async def eligible_products(user: dict = Depends(get_current_user)):
+    """Return list of {product_id, order_id, product_name, product_image} that user can review:
+    present in a delivered order and not already reviewed by this user."""
+    orders = await db.orders.find({"user_id": user["id"], "status": "Entregado"}, {"_id": 0}).to_list(500)
+    reviewed = await db.reviews.find({"user_id": user["id"]}, {"_id": 0, "product_id": 1, "order_id": 1}).to_list(1000)
+    reviewed_keys = {(r["product_id"], r["order_id"]) for r in reviewed}
+    out = []
+    for o in orders:
+        for it in o.get("items", []):
+            key = (it["product_id"], o["id"])
+            if key in reviewed_keys:
+                continue
+            out.append({
+                "product_id": it["product_id"], "order_id": o["id"],
+                "order_number": o["order_number"],
+                "product_name": it["name"], "product_image": it.get("image", ""),
+            })
+    # Deduplicate by product_id (keep latest order)
+    seen = {}
+    for item in out:
+        seen[item["product_id"]] = item
+    return list(seen.values())
+
+@api.post("/products/{pid}/reviews")
+async def create_review(pid: str, payload: ReviewIn, user: dict = Depends(get_current_user)):
+    if payload.rating < 1 or payload.rating > 5:
+        raise HTTPException(400, "La valoración debe estar entre 1 y 5")
+    order = await db.orders.find_one({"id": payload.order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(403, "Pedido no encontrado")
+    if order.get("status") != "Entregado":
+        raise HTTPException(403, "Solo podés reseñar productos de pedidos entregados")
+    if not any(it["product_id"] == pid for it in order.get("items", [])):
+        raise HTTPException(400, "Ese producto no está en el pedido indicado")
+    existing = await db.reviews.find_one({"user_id": user["id"], "product_id": pid, "order_id": payload.order_id})
+    if existing:
+        raise HTTPException(400, "Ya dejaste una reseña para este producto")
+    doc = {
+        "id": new_id(),
+        "product_id": pid,
+        "order_id": payload.order_id,
+        "user_id": user["id"],
+        "user_name": f"{user.get('first_name','')} {user.get('last_name','')[:1]}.".strip(),
+        "rating": payload.rating,
+        "comment": payload.comment or "",
+        "image_url": payload.image_url or "",
+        "created_at": now_iso(),
+    }
+    await db.reviews.insert_one(doc)
+    await recompute_product_rating(pid)
+    doc.pop("_id", None)
+    return doc
+
+@api.get("/admin/reviews")
+async def admin_list_reviews(_: dict = Depends(require_admin)):
+    return await db.reviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
+
+@api.delete("/admin/reviews/{rid}")
+async def admin_delete_review(rid: str, _: dict = Depends(require_admin)):
+    r = await db.reviews.find_one({"id": rid}, {"_id": 0})
+    if not r:
+        raise HTTPException(404, "Reseña no encontrada")
+    await db.reviews.delete_one({"id": rid})
+    await recompute_product_rating(r["product_id"])
+    return {"ok": True}
 
 # ---------- Favorites ----------
 @api.get("/favorites")
