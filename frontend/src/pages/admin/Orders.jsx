@@ -64,7 +64,9 @@ export default function Orders() {
               </div>
               <div className="mt-4 border-t border-[#27272A] pt-4 text-right">
                 <p className="font-mono font-bold text-white text-xl">{formatARS(sel.total)}</p>
-                <p className="font-mono text-xs text-zinc-500">+{sel.points_earned} puntos</p>
+                <p className={`font-mono text-xs mt-1 ${sel.points_credited ? "text-[#10B981]" : "text-zinc-500"}`}>
+                  {sel.points_credited ? `✓ ${sel.points_earned} puntos acreditados` : `⏳ ${sel.points_earned} puntos pendientes (se acreditan al marcar Pagado)`}
+                </p>
               </div>
               <div className="mt-6">
                 <h4 className="font-mono text-xs uppercase tracking-widest text-zinc-500 mb-3">Cambiar estado</h4>

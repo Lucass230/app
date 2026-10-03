@@ -60,45 +60,77 @@ export default function Checkout() {
       await load();
       await refresh();
 
-      // Build WhatsApp message
+      // Build decorated WhatsApp message
       const number = settings.whatsapp_number || "5493813007953";
+      const SEP = "━━━━━━━━━━━━━━━━━━━";
+      const CIRCLED = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩","⑪","⑫","⑬","⑭","⑮"];
+      const payLabel = { transferencia: "Transferencia bancaria", efectivo: "Efectivo", tarjeta: "Tarjeta" }[o.payment_method] || o.payment_method;
+      const delLabel = o.delivery_method === "punto_encuentro" ? "Punto de encuentro" : "Uber / Delivery (a cargo del cliente)";
+
       const lines = [
-        "━━━━━━━━━━━━━━━━",
-        "🛍️ CATTO — NUEVO PEDIDO",
-        "━━━━━━━━━━━━━━━━",
+        SEP,
+        "    🛍️  *C A T T O*",
+        "   N U E V O   P E D I D O",
+        SEP,
         "",
-        `📦 Pedido: ${o.order_number}`,
+        `📦  *N° de pedido*`,
+        `   \`${o.order_number}\``,
         "",
-        "👤 CLIENTE",
-        `Nombre: ${o.customer.first_name}`,
-        `Apellido: ${o.customer.last_name}`,
-        `Email: ${o.customer.email}`,
-        `Teléfono: ${o.customer.phone || "-"}`,
+        SEP,
+        "👤  *CLIENTE*",
+        SEP,
+        `▸ Nombre:   ${o.customer.first_name} ${o.customer.last_name}`,
+        `▸ Email:    ${o.customer.email}`,
+        `▸ Teléfono: ${o.customer.phone || "—"}`,
         "",
-        "🛒 PRODUCTOS",
-        "",
-        ...o.items.map((it, i) => {
-          const vp = [];
-          if (it.variant_color) vp.push(`Color: ${it.variant_color}`);
-          if (it.variant_size) vp.push(`Talle: ${it.variant_size}`);
-          return `${i+1}. ${it.name}\n   ${vp.join(" / ") || "-"}\n   Cantidad: ${it.quantity}\n   Precio: ${formatARS(it.final_price)}`;
+        SEP,
+        "🛒  *PRODUCTOS*",
+        SEP,
+        ...o.items.flatMap((it, i) => {
+          const circled = CIRCLED[i] || `${i + 1}.`;
+          const variantParts = [];
+          if (it.variant_color) variantParts.push(`Color: ${it.variant_color}`);
+          if (it.variant_size) variantParts.push(`Talle: ${it.variant_size}`);
+          const vrow = variantParts.length ? `    ◦ ${variantParts.join(" / ")}` : null;
+          return [
+            `${circled}  *${it.name}*`,
+            vrow,
+            `    ◦ Cantidad: ${it.quantity}`,
+            `    💰 ${formatARS(it.final_price * it.quantity)}`,
+            "",
+          ].filter(Boolean);
         }),
+        SEP,
+        "💵  *RESUMEN*",
+        SEP,
+        `   Subtotal:    ${formatARS(o.subtotal)}`,
+        o.discount > 0 ? `   Descuentos:  -${formatARS(o.discount)}` : null,
+        o.coupon_code ? `   Cupón ${o.coupon_code}: -${formatARS(o.coupon_discount)}` : null,
+        o.redeem_discount > 0 ? `   Puntos (${o.redeem_points}): -${formatARS(o.redeem_discount)}` : null,
+        "   ─────────────────",
+        `   💥 *TOTAL:  ${formatARS(o.total)}*`,
         "",
-        "━━━━━━━━━━━━━━━━",
-        `Subtotal: ${formatARS(o.subtotal)}`,
-        o.discount > 0 ? `Descuento: -${formatARS(o.discount)}` : null,
-        o.coupon_code ? `Cupón ${o.coupon_code}: -${formatARS(o.coupon_discount)}` : null,
-        o.redeem_discount > 0 ? `Puntos canjeados (${o.redeem_points}): -${formatARS(o.redeem_discount)}` : null,
-        `TOTAL: ${formatARS(o.total)}`,
-        "━━━━━━━━━━━━━━━━",
+        SEP,
+        "💳  *PAGO*",
+        SEP,
+        `   ${payLabel}`,
         "",
-        `💳 Medio de pago: ${o.payment_method}`,
-        `🚚 Entrega: ${o.delivery_method === "punto_encuentro" ? "Punto de encuentro" : "Uber (a cargo del cliente)"}`,
-        o.delivery_address ? `📍 Dirección: ${o.delivery_address}` : null,
+        SEP,
+        "🚚  *ENTREGA*",
+        SEP,
+        `   ${delLabel}`,
+        o.delivery_address ? `   📍 ${o.delivery_address}` : null,
         "",
-        `⭐ Puntos obtenidos: ${o.points_earned}`,
+        SEP,
+        "⭐  *PUNTOS CATTO*",
+        SEP,
+        `   +${o.points_earned} puntos`,
+        `   (se acreditan al confirmar el pago)`,
         "",
-        "Gracias por comprar en CATTO.",
+        SEP,
+        "    G R A C I A S",
+        "    por elegir *CATTO*",
+        SEP,
       ].filter(Boolean).join("\n");
 
       const url = `https://wa.me/${number}?text=${encodeURIComponent(lines)}`;

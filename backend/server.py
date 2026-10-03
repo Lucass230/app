@@ -408,7 +408,7 @@ def _order_html(order: dict) -> str:
 <div style="margin:24px 0 0;padding:16px;background:#0D0D0F;border:1px solid #27272A">
 <p style="font-family:Arial,sans-serif;font-size:13px;color:#A1A1AA;margin:0 0 4px"><strong style="color:#FAFAFA">Pago:</strong> {escape(order["payment_method"])}</p>
 <p style="font-family:Arial,sans-serif;font-size:13px;color:#A1A1AA;margin:0 0 4px"><strong style="color:#FAFAFA">Entrega:</strong> {escape("Punto de encuentro" if order["delivery_method"] == "punto_encuentro" else "Uber (a cargo del cliente)")}</p>
-<p style="font-family:Arial,sans-serif;font-size:13px;color:#E60023;margin:8px 0 0"><strong>+{order["points_earned"]} puntos CATTO</strong> ganados con este pedido</p>
+<p style="font-family:Arial,sans-serif;font-size:13px;color:#E60023;margin:8px 0 0"><strong>+{order["points_earned"]} puntos CATTO</strong> se acreditan al confirmar el pago</p>
 </div>
 </td></tr>
 <tr><td style="padding:20px 32px;border-top:1px solid #27272A;background:#0D0D0F">
@@ -968,13 +968,13 @@ async def checkout(payload: CheckoutIn, background: BackgroundTasks, user: dict 
     if coupon_doc:
         await db.coupons.update_one({"id": coupon_doc["id"]}, {"$inc": {"uses": 1}})
 
-    # Points: deduct redemption, award earned
+    # Points: deduct redemption at checkout, but DEFER earnings until admin marks order as Pagado
     if redeem_points > 0:
         await db.users.update_one({"id": user["id"]}, {"$inc": {"points": -redeem_points}})
         await db.points_tx.insert_one({"id": new_id(), "user_id": user["id"], "type": "redeem", "amount": -redeem_points, "order_id": order["id"], "created_at": now_iso()})
-    if points_earned > 0:
-        await db.users.update_one({"id": user["id"]}, {"$inc": {"points": points_earned}})
-        await db.points_tx.insert_one({"id": new_id(), "user_id": user["id"], "type": "earn", "amount": points_earned, "order_id": order["id"], "created_at": now_iso()})
+    # points_earned are stored on the order but credited only on status=Pagado
+    order["points_credited"] = False
+    await db.orders.update_one({"id": order["id"]}, {"$set": {"points_credited": False}})
 
     # Clear cart
     await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": [], "updated_at": now_iso()}})
@@ -1009,7 +1009,47 @@ async def admin_list_orders(_: dict = Depends(require_admin)):
 
 @api.put("/admin/orders/{oid}/status")
 async def update_order_status(oid: str, payload: OrderStatusIn, _: dict = Depends(require_admin)):
-    await db.orders.update_one({"id": oid}, {"$set": {"status": payload.status, "updated_at": now_iso()}})
+    order = await db.orders.find_one({"id": oid}, {"_id": 0})
+    if not order:
+        raise HTTPException(404, "Pedido no encontrado")
+    new_status = payload.status
+    pts = order.get("points_earned", 0) or 0
+    credited = order.get("points_credited", False)
+    user_id = order["user_id"]
+    update = {"status": new_status, "updated_at": now_iso()}
+
+    # Credit points when transitioning to Pagado
+    if new_status == "Pagado" and not credited and pts > 0:
+        await db.users.update_one({"id": user_id}, {"$inc": {"points": pts}})
+        await db.points_tx.insert_one({
+            "id": new_id(), "user_id": user_id, "type": "earn", "amount": pts,
+            "order_id": oid, "created_at": now_iso(),
+            "note": f"Acreditado al marcar pedido {order['order_number']} como Pagado",
+        })
+        update["points_credited"] = True
+
+    # Revoke credited points when cancelling
+    if new_status == "Cancelado" and credited and pts > 0:
+        await db.users.update_one({"id": user_id}, {"$inc": {"points": -pts}})
+        await db.points_tx.insert_one({
+            "id": new_id(), "user_id": user_id, "type": "revoke", "amount": -pts,
+            "order_id": oid, "created_at": now_iso(),
+            "note": f"Puntos revocados por cancelación del pedido {order['order_number']}",
+        })
+        update["points_credited"] = False
+
+    # Also refund redeemed points on cancel
+    redeem = order.get("redeem_points", 0) or 0
+    if new_status == "Cancelado" and redeem > 0 and not order.get("redeem_refunded", False):
+        await db.users.update_one({"id": user_id}, {"$inc": {"points": redeem}})
+        await db.points_tx.insert_one({
+            "id": new_id(), "user_id": user_id, "type": "refund", "amount": redeem,
+            "order_id": oid, "created_at": now_iso(),
+            "note": f"Reintegro de puntos canjeados en pedido {order['order_number']} (cancelado)",
+        })
+        update["redeem_refunded"] = True
+
+    await db.orders.update_one({"id": oid}, {"$set": update})
     return await db.orders.find_one({"id": oid}, {"_id": 0})
 
 # ---------- Points ----------

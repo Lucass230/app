@@ -49,6 +49,11 @@ export default function Account() {
                 <div className="min-w-0">
                   <p className="font-mono text-xs sm:text-sm text-white break-all">{o.order_number}</p>
                   <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">{new Date(o.created_at).toLocaleDateString("es-AR")} · {o.items.length} items</p>
+                  {o.points_earned > 0 && (
+                    <p className={`font-mono text-[10px] uppercase tracking-widest mt-1 ${o.points_credited ? "text-[#10B981]" : "text-zinc-500"}`}>
+                      {o.points_credited ? `✓ +${o.points_earned} puntos acreditados` : `⏳ +${o.points_earned} puntos al pagar`}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-mono font-bold text-white whitespace-nowrap">{formatARS(o.total)}</p>
